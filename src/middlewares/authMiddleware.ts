@@ -5,8 +5,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'please-change-this-secret';
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
-  const token = auth.split(' ')[1];
+  let token: string | undefined;
+  if (auth && auth.startsWith('Bearer ')) {
+    token = auth.split(' ')[1];
+  } else if ((req as any).cookies && (req as any).cookies.accessToken) {
+    token = (req as any).cookies.accessToken;
+  }
+  console.log('Auth token from header or cookie:', token);
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     (req as any).user = payload;

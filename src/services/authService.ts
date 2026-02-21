@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import User, { IUser } from '../models/userModel';
 
@@ -85,6 +86,34 @@ class AuthService {
     async getUserById(id: string) {
         const u = await User.findById(id).select('-password -refreshTokens');
         return u;
+    }
+
+    async requestPasswordReset(email: string) {
+        const user = await User.findOne({ email });
+        if (!user) throw new Error('No user with that email');
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const hashed = crypto.createHash('sha256').update(token).digest('hex');
+        const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        user.resetPasswordToken = hashed;
+        user.resetPasswordExpires = expires;
+        await user.save();
+
+        // In production you would email `token` to the user. Return it here for dev/testing.
+        return token;
+    }
+
+    async resetPassword(token: string, newPassword: string) {
+        const hashed = crypto.createHash('sha256').update(token).digest('hex');
+        const user = await User.findOne({ resetPasswordToken: hashed, resetPasswordExpires: { $gt: new Date() } });
+        if (!user) throw new Error('Invalid or expired reset token');
+
+        const hashedPwd = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPwd;
+        user.resetPasswordToken = undefined as any;
+        user.resetPasswordExpires = undefined as any;
+        await user.save();
     }
 }
 

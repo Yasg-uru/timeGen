@@ -15,6 +15,18 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   try {
     const { email, password } = req.body;
     const result = await authService.login(email, password);
+    // set access token in an httpOnly cookie for browser requests
+    const accessToken = (result as any).accessToken;
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      // 15 minutes
+      maxAge: 15 * 60 * 1000,
+    };
+    res.cookie('accessToken', accessToken, cookieOptions);
+
+    // still return tokens/user payload in body for API clients
     res.json(result);
   } catch (err) {
     next(err);
@@ -36,6 +48,8 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     const userId = (req as any).user?.sub;
     const { refreshToken } = req.body;
     await authService.logout(userId, refreshToken);
+    // clear auth cookie
+    res.clearCookie('accessToken');
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -52,4 +66,25 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export default { register, login, refresh, logout, me };
+export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+    const token = await authService.requestPasswordReset(email);
+    // In production you would email the token. For now return it for development.
+    res.json({ ok: true, token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, password } = req.body;
+    await authService.resetPassword(token, password);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export default { register, login, refresh, logout, me, forgotPassword, resetPassword };
