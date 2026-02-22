@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import { logger } from '../utils/logger';
-
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/timegen';
-
+const MONGO_URI = 'mongodb+srv://yashpawar12122004:KaeUSgv4Letln7rX@crushsphere-location-se.zu98e.mongodb.net/?retryWrites=true&w=majority&appName=crushsphere-location-service';
 export async function connectDB() {
   try {
     await mongoose.connect(MONGO_URI);
