@@ -11,6 +11,10 @@ import connectDB from './db';
 
 const app = express();
 
+// When running behind a proxy (like Render, Vercel, etc.) enable trust proxy
+// so express and express-rate-limit correctly read X-Forwarded-* headers.
+app.set('trust proxy', true);
+
 app.use(helmet());
 
 const allowedOrigins = (config as any).frontendUrls || [config.frontendUrl]

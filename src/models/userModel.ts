@@ -1,6 +1,8 @@
 import { Schema, model, Document } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface IUser extends Document {
+  uid?: string;
   email: string;
   name?: string;
   password: string;
@@ -12,6 +14,7 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
+    uid: { type: String, required: true, unique: true, default: uuidv4, index: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     name: { type: String, required: false, trim: true },
     password: { type: String, required: true },
